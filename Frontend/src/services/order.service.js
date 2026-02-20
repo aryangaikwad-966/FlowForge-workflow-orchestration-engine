@@ -1,8 +1,7 @@
 import axios from "axios";
 import authHeader from "./auth-header";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/auth/";
-const ORDER_API_URL = API_URL.replace("/auth/", "/orders");
+const ORDER_API_URL = "http://localhost:8080/api/orders";
 
 const createOrder = (orderData) => {
     return axios.post(ORDER_API_URL, orderData, { headers: authHeader() });
@@ -13,7 +12,7 @@ const getMyOrders = () => {
 };
 
 const cancelOrder = (orderId) => {
-    return axios.put(ORDER_API_URL + `/${orderId}/cancel/user`, {}, { headers: authHeader() });
+    return axios.put(ORDER_API_URL + "/" + orderId + "/cancel/user", {}, { headers: authHeader() });
 };
 
 const orderService = {

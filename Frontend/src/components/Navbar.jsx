@@ -59,6 +59,13 @@ const Navbar = () => {
                                 My Orders
                             </Link>
                         </li>
+                        {currentUser && (
+                            <li className="nav-item">
+                                <Link to={"/profile"} className={`nav-link-tech me-2 ${location.pathname === '/profile' ? 'active' : ''}`}>
+                                    Profile
+                                </Link>
+                            </li>
+                        )}
                         {isAdmin && (
                             <>
                                 <li className="nav-item">
@@ -69,6 +76,11 @@ const Navbar = () => {
                                 <li className="nav-item">
                                     <Link to={"/admin/orders"} className={`nav-link-tech ${location.pathname === '/admin/orders' ? 'active' : ''}`}>
                                         Order Management
+                                    </Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link to={"/admin/customers"} className={`nav-link-tech ${location.pathname === '/admin/customers' ? 'active' : ''}`}>
+                                        Customer Management
                                     </Link>
                                 </li>
                             </>

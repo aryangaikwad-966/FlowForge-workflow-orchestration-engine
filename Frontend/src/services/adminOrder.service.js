@@ -1,19 +1,18 @@
 import axios from "axios";
 import authHeader from "./auth-header";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/auth/";
-const ORDER_API_URL = API_URL.replace("/auth/", "/orders");
+const ORDER_API_URL = "http://localhost:8080/api/orders";
 
 const getAllOrders = () => {
     return axios.get(ORDER_API_URL, { headers: authHeader() });
 };
 
 const getOrdersByStatus = (status) => {
-    return axios.get(ORDER_API_URL + `/filter/${status}`, { headers: authHeader() });
+    return axios.get(ORDER_API_URL + "/filter/" + status, { headers: authHeader() });
 };
 
 const updateOrderStatus = (orderId, newStatus) => {
-    return axios.put(ORDER_API_URL + `/${orderId}/status`, newStatus, {
+    return axios.put(ORDER_API_URL + "/" + orderId + "/status", newStatus, {
         headers: {
             ...authHeader(),
             'Content-Type': 'application/json'
@@ -22,7 +21,7 @@ const updateOrderStatus = (orderId, newStatus) => {
 };
 
 const cancelAnyOrder = (orderId) => {
-    return axios.put(ORDER_API_URL + `/${orderId}/cancel/admin`, {}, { headers: authHeader() });
+    return axios.put(ORDER_API_URL + "/" + orderId + "/cancel/admin", {}, { headers: authHeader() });
 };
 
 const adminOrderService = {

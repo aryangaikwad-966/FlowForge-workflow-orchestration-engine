@@ -6,11 +6,14 @@
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/payload/response/JwtResponse.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/payload/request/OrderItemRequest.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/security/services/UserDetailsImpl.java
+/Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/payload/request/UserRequest.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/DataInitializer.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/model/Role.java
+/Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/controller/UserController.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/security/jwt/AuthEntryPointJwt.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/model/OrderItem.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/WorkflowCommerceApplication.java
+/Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/payload/response/UserResponse.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/model/ERole.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/model/User.java
 /Users/aryangaikwad/Desktop/workflow-commerce-systemm/Backend/src/main/java/com/example/workflowcommerce/controller/ProductController.java

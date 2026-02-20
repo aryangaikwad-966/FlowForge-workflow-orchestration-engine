@@ -13,6 +13,8 @@ import ProductCatalog from "./pages/Customer/ProductCatalog";
 import Cart from "./pages/Customer/Cart";
 import MyOrders from "./pages/Customer/MyOrders";
 import OrderDashboard from "./pages/Admin/OrderDashboard";
+import CustomerDashboard from "./pages/Admin/CustomerDashboard";
+import Profile from "./pages/Customer/Profile";
 import { CartProvider } from "./contexts/CartContext";
 
 // Admin Route Guard Component
@@ -113,6 +115,7 @@ function App() {
             <Route path="/products" element={<ProductCatalog />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/orders" element={<MyOrders />} />
+            <Route path="/profile" element={<Profile />} />
             <Route
               path="/admin/categories"
               element={
@@ -134,6 +137,14 @@ function App() {
               element={
                 <AdminRoute>
                   <OrderDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/customers"
+              element={
+                <AdminRoute>
+                  <CustomerDashboard />
                 </AdminRoute>
               }
             />
