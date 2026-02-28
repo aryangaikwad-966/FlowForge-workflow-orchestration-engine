@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import orderService from "../../services/order.service";
 import paymentService from "../../services/payment.service";
+import shippingService from "../../services/shipping.service";
 import AuthService from "../../services/auth.service";
 import { useNavigate } from "react-router-dom";
 import { validateAuth, forceLogout } from "../../utils/authUtils";
@@ -15,6 +16,10 @@ const MyOrders = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("Credit Card");
     const [processingPayment, setProcessingPayment] = useState(false);
+
+    // Shipping tracking state
+    const [showShippingModal, setShowShippingModal] = useState(false);
+    const [trackingInfo, setTrackingInfo] = useState(null);
     const navigate = useNavigate();
 
     // Check if user is authenticated
@@ -117,6 +122,16 @@ const MyOrders = () => {
         }
     };
 
+    const handleTrackShipping = async (orderId) => {
+        try {
+            const res = await shippingService.getMyShipping(orderId);
+            setTrackingInfo(res.data);
+            setShowShippingModal(true);
+        } catch (err) {
+            setMessage("Shipping details not available yet.");
+        }
+    };
+
     // Check if user is authenticated before showing content
     if (!user) {
         return (
@@ -199,6 +214,14 @@ const MyOrders = () => {
                                                     </button>
                                                 </>
                                             )}
+                                            {['Shipped', 'In Transit', 'Delivered'].includes(order.orderStatus) && (
+                                                <button
+                                                    className="btn btn-sm btn-outline-info"
+                                                    onClick={() => handleTrackShipping(order.orderId)}
+                                                >
+                                                    Track Shipping
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -258,6 +281,40 @@ const MyOrders = () => {
                                         'Confirm Payment'
                                     )}
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Shipping Tracking Modal */}
+            {showShippingModal && trackingInfo && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Track Shipment</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowShippingModal(false)}></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="p-3 bg-light rounded shadow-sm border mb-3">
+                                    <h6 className="fw-bold mb-3 border-bottom pb-2">Tracking Details</h6>
+                                    <div className="row mb-2">
+                                        <div className="col-5 text-muted small">Status:</div>
+                                        <div className="col-7 fw-bold text-primary">{trackingInfo.shippingStatus}</div>
+                                    </div>
+                                    <div className="row mb-2">
+                                        <div className="col-5 text-muted small">Courier:</div>
+                                        <div className="col-7">{trackingInfo.courierService}</div>
+                                    </div>
+                                    <div className="row mb-2">
+                                        <div className="col-5 text-muted small">Tracking Ref:</div>
+                                        <div className="col-7">{trackingInfo.trackingNumber}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowShippingModal(false)}>Close</button>
                             </div>
                         </div>
                     </div>

@@ -1,4 +1,6 @@
+com/example/workflowcommerce/model/Shipping.class
 com/example/workflowcommerce/model/Role.class
+com/example/workflowcommerce/repository/ShippingRepository.class
 com/example/workflowcommerce/DataInitializer.class
 com/example/workflowcommerce/repository/CategoryRepository.class
 com/example/workflowcommerce/security/WebSecurityConfig.class
@@ -6,11 +8,13 @@ com/example/workflowcommerce/model/User.class
 com/example/workflowcommerce/model/Product.class
 com/example/workflowcommerce/repository/RoleRepository.class
 com/example/workflowcommerce/controller/ProductController.class
+com/example/workflowcommerce/dto/ShippingCreateRequest.class
 com/example/workflowcommerce/repository/UserRepository.class
 com/example/workflowcommerce/security/jwt/AuthTokenFilter.class
 com/example/workflowcommerce/payload/response/MessageResponse.class
 com/example/workflowcommerce/security/jwt/AuthEntryPointJwt.class
 com/example/workflowcommerce/payload/response/JwtResponse.class
+com/example/workflowcommerce/dto/ShippingResponse.class
 com/example/workflowcommerce/model/ERole.class
 com/example/workflowcommerce/payload/request/OrderRequest.class
 com/example/workflowcommerce/repository/ProductRepository.class
@@ -21,12 +25,15 @@ com/example/workflowcommerce/repository/OrderItemRepository.class
 com/example/workflowcommerce/security/services/UserDetailsServiceImpl.class
 com/example/workflowcommerce/service/ProductService.class
 com/example/workflowcommerce/model/Order.class
+com/example/workflowcommerce/service/ShippingService.class
 com/example/workflowcommerce/repository/OrderRepository.class
 com/example/workflowcommerce/payload/request/SignupRequest.class
 com/example/workflowcommerce/service/OrderService.class
+com/example/workflowcommerce/controller/ShippingController.class
 com/example/workflowcommerce/model/OrderItem.class
 com/example/workflowcommerce/payload/request/OrderItemRequest.class
 com/example/workflowcommerce/security/jwt/JwtUtils.class
 com/example/workflowcommerce/WorkflowCommerceApplication.class
 com/example/workflowcommerce/controller/CategoryController.class
+com/example/workflowcommerce/dto/ShippingStatusUpdateRequest.class
 com/example/workflowcommerce/payload/request/LoginRequest.class

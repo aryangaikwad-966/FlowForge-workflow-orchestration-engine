@@ -98,6 +98,11 @@ const Navbar = () => {
                                         Cart Management
                                     </Link>
                                 </li>
+                                <li className="nav-item">
+                                    <Link to={"/admin/shipping"} className={`nav-link-tech ${location.pathname === '/admin/shipping' ? 'active' : ''}`}>
+                                        Shipping Management
+                                    </Link>
+                                </li>
                             </>
                         )}
                     </ul>
