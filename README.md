@@ -25,35 +25,62 @@
 
 ## Screenshots
 
+<table>
+<tr>
+<td width="50%">
+
 ### Operations Dashboard
-Real-time monitoring of workflow instances, order statistics, and system health.
+Real-time metrics showing active workflows, order pipeline status, and KPI cards for monitoring system throughput.
 
 ![Operations Dashboard](screenshots/dashboard.png)
 
+</td>
+<td width="50%">
+
 ### Workflow State Management
-Visual state machine with transition history and role-based actions.
+Interactive state visualization displaying current order states, transition buttons, and workflow instance details.
 
 ![Workflow States](screenshots/workflow-states.png)
 
+</td>
+</tr>
+<tr>
+<td width="50%">
+
 ### Audit Logs
-Immutable audit trail with actor details, timestamps, and transition context.
+Chronological event log capturing every state transition with performer identity, timestamps, and action context.
 
 ![Audit Logs](screenshots/audit-logs.png)
 
+</td>
+<td width="50%">
+
 ### Order Management
-Order lifecycle tracking with integrated payment and shipping status.
+Order lifecycle view with status badges, payment verification, shipping tracking, and workflow state integration.
 
 ![Order Management](screenshots/order-management.png)
 
+</td>
+</tr>
+<tr>
+<td width="50%">
+
 ### Product Catalog
-Admin interface for inventory management with category filtering.
+Inventory management interface with category filtering, stock levels, pricing controls, and product status toggles.
 
 ![Product Catalog](screenshots/product-catalog.png)
 
+</td>
+<td width="50%">
+
 ### Admin Panel
-Centralized administration console for all platform entities.
+Centralized control center for managing users, categories, coupons, reviews, and system configuration.
 
 ![Admin Panel](screenshots/admin-panel.png)
+
+</td>
+</tr>
+</table>
 
 ---
 
