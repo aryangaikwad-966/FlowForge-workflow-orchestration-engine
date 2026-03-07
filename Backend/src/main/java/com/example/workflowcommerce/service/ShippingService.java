@@ -2,6 +2,7 @@ package com.example.workflowcommerce.service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,12 +55,24 @@ public class ShippingService {
             throw new RuntimeException("Cannot ship order. Order must be Paid or Processing. Current status: " + status);
         }
 
-        if (shippingRepository.existsByOrderOrderId(orderId)) {
-            throw new RuntimeException("Shipping already created for this order.");
+        Shipping shipping;
+        Optional<Shipping> existingShipping = shippingRepository.findByOrderOrderId(orderId);
+        
+        if (existingShipping.isPresent()) {
+            // Update existing shipping (created during order with PENDING status)
+            shipping = existingShipping.get();
+            
+            // Only allow updating if not already shipped/delivered
+            if (STATUS_SHIPPED.equals(shipping.getShippingStatus()) || 
+                STATUS_DELIVERED.equals(shipping.getShippingStatus())) {
+                throw new RuntimeException("Shipping already processed for this order.");
+            }
+        } else {
+            // Create new shipping if none exists
+            shipping = new Shipping();
+            shipping.setOrder(order);
         }
 
-        Shipping shipping = new Shipping();
-        shipping.setOrder(order);
         shipping.setCourierService(request.getCourierService());
         shipping.setTrackingNumber(request.getTrackingNumber());
         shipping.setShippingMethod(request.getShippingMethod());
@@ -92,8 +105,13 @@ public class ShippingService {
             throw new RuntimeException("Cannot edit shipping once Delivered");
         }
 
-        // Strictly enforce sequential transitions: Shipped -> In Transit -> Delivered
-        if (STATUS_IN_TRANSIT.equals(newStatus)) {
+        // Strictly enforce sequential transitions: PENDING -> Shipped -> In Transit -> Delivered
+        if (STATUS_SHIPPED.equals(newStatus)) {
+            // Can go to Shipped from PENDING or keep at Shipped
+            if (!"PENDING".equalsIgnoreCase(currentStatus) && !STATUS_SHIPPED.equals(currentStatus)) {
+                throw new RuntimeException("Cannot transition to 'Shipped'. Current status must be 'PENDING'. Current: " + currentStatus);
+            }
+        } else if (STATUS_IN_TRANSIT.equals(newStatus)) {
             // Can only go to In Transit from Shipped
             if (!STATUS_SHIPPED.equals(currentStatus)) {
                 throw new RuntimeException("Cannot transition to 'In Transit'. Current status must be 'Shipped'. Current: " + currentStatus);

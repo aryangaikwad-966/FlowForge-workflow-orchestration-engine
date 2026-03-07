@@ -25,4 +25,8 @@ public class OrderRequest {
     private String couponCode;
     public String getCouponCode() { return couponCode; }
     public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
+
+    private String paymentMethod;
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 }

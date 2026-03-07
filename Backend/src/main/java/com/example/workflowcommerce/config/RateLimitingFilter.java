@@ -11,7 +11,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,7 +50,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private Bucket createNewBucket(String key) {
-        Bandwidth limit = Bandwidth.classic(REQUESTS_PER_MINUTE, Refill.greedy(REQUESTS_PER_MINUTE, Duration.ofMinutes(1)));
+        Bandwidth limit = Bandwidth.builder()
+                .capacity(REQUESTS_PER_MINUTE)
+                .refillGreedy(REQUESTS_PER_MINUTE, Duration.ofMinutes(1))
+                .build();
         return Bucket.builder().addLimit(limit).build();
     }
 

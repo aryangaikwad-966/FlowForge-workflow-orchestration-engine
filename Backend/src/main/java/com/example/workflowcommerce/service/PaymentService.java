@@ -35,16 +35,20 @@ public class PaymentService {
             return existingPayment.get(); // Return existing completed payment
         }
 
-        // If there's a failed payment, delete it and create new one
+        Payment payment;
         if (existingPayment.isPresent()) {
-            paymentRepository.delete(existingPayment.get());
+            // Update existing PENDING payment instead of deleting
+            payment = existingPayment.get();
+            payment.setPaymentMethod(paymentMethod);
+            payment.setPaymentStatus("COMPLETED");
+        } else {
+            // Create new payment if none exists
+            payment = new Payment();
+            payment.setOrder(order);
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod(paymentMethod);
+            payment.setPaymentStatus("COMPLETED");
         }
-
-        Payment payment = new Payment();
-        payment.setOrder(order);
-        payment.setAmount(order.getTotalAmount());
-        payment.setPaymentMethod(paymentMethod);
-        payment.setPaymentStatus("COMPLETED");
         
         // Update order status to Paid
         order.setOrderStatus("Paid");

@@ -6,6 +6,12 @@
 -- 
 -- This file consolidates all task-specific SQL files into a single reference.
 -- Execute sections in order for fresh database setup.
+--
+-- IMPORTANT NOTES:
+-- 1. User passwords should be created via the API (/api/auth/signup) to ensure
+--    proper BCrypt hashing compatible with Spring Security.
+-- 2. For quick database reset, use SECTION 15: QUICK START SEEDING.
+-- 3. Workflow definitions MUST exist before creating orders for proper lifecycle.
 -- ============================================================================
 
 -- ############################################################################
@@ -28,22 +34,23 @@ CREATE TABLE categories (
     status BOOLEAN DEFAULT TRUE
 );
 
--- 1.2 Insert sample category data
+-- 1.2 Insert sample category data (4 active categories for e-commerce)
 INSERT INTO categories (category_name, description, status) 
 VALUES 
-('Electronics', 'High-end computing and consumer gadgets', 1),
-('Apparel', 'Traditional and modern professional wear', 1),
-('Logistics', 'Internal supply chain equipment', 0);
+('Electronics', 'Smartphones, laptops, tablets, and electronic accessories', 1),
+('Clothing', 'Men and women apparel, fashion wear', 1),
+('Home & Garden', 'Home decor, furniture, and garden supplies', 1),
+('Sports & Outdoors', 'Sports equipment and outdoor gear', 1);
 
--- 1.3 Update category example
-UPDATE categories 
-SET category_name = 'Computing Hardware', updated_at = NOW() 
-WHERE category_id = 1;
+-- 1.3 Update category example (commented - for reference)
+-- UPDATE categories 
+-- SET category_name = 'Computing Hardware', updated_at = NOW() 
+-- WHERE category_id = 1;
 
--- 1.4 Soft delete category (status = false)
-UPDATE categories 
-SET status = 0, updated_at = NOW() 
-WHERE category_id = 2;
+-- 1.4 Soft delete category example (commented - for reference)
+-- UPDATE categories 
+-- SET status = 0, updated_at = NOW() 
+-- WHERE category_id = 2;
 
 -- 1.5 Select active categories
 SELECT * FROM categories WHERE status = 1 ORDER BY category_name ASC;
@@ -54,6 +61,13 @@ SELECT category_id, category_name, description, status, created_at FROM categori
 
 -- ############################################################################
 -- SECTION 2: USER & ROLE MANAGEMENT
+-- ############################################################################
+-- IMPORTANT: For production or testing, create users via the API endpoints:
+--   POST /api/auth/signup - Register new users
+--   POST /api/auth/signin - Login and get JWT token
+-- 
+-- BCrypt password hashes in SQL may not match Spring Security's encoder.
+-- The hashes below are for reference only. Re-register via API if login fails.
 -- ############################################################################
 
 -- ----------------------------------------------------------------------------
@@ -94,30 +108,46 @@ CREATE TABLE IF NOT EXISTS user_roles (
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 
--- 2.5 Create admin user (password: admin123)
+-- ----------------------------------------------------------------------------
+-- 2.5 Sample Users (RECOMMENDED: Create via API instead for proper BCrypt hashing)
+-- ----------------------------------------------------------------------------
+-- Admin user: username=admin, password=admin123
+-- Customer user: username=customer, password=customer123
+--
+-- To create users via API (recommended approach):
+-- curl -X POST http://localhost:8080/api/auth/signup \
+--   -H "Content-Type: application/json" \
+--   -d '{"username":"admin","email":"admin@flowforge.com","password":"admin123","role":["admin"]}'
+--
+-- curl -X POST http://localhost:8080/api/auth/signup \
+--   -H "Content-Type: application/json" \
+--   -d '{"username":"customer","email":"customer@flowforge.com","password":"customer123"}'
+-- ----------------------------------------------------------------------------
+
+-- Insert admin user (password: admin123) - BCrypt hash may need API re-registration
 INSERT INTO users (username, email, password, first_name, last_name, phone_number, status, created_at) 
-VALUES ('admin', 'admin@test.com', '$2a$10$WbspULzqno53UEVNJDSy4ur3usqP8Owh1JQKQyy2uAACW5U3aYH/u', 
+VALUES ('admin', 'admin@flowforge.com', '$2a$10$WbspULzqno53UEVNJDSy4ur3usqP8Owh1JQKQyy2uAACW5U3aYH/u', 
         'Admin', 'User', '9876543210', 1, NOW());
 
--- 2.6 Assign admin role
+-- Assign admin role
 INSERT INTO user_roles (user_id, role_id)
 VALUES ((SELECT id FROM users WHERE username = 'admin'), 
         (SELECT id FROM roles WHERE name = 'ROLE_ADMIN'));
 
--- 2.7 Create regular user (password: user123)
+-- Insert customer user (password: customer123)
 INSERT INTO users (username, email, password, first_name, last_name, phone_number, status, created_at) 
-VALUES ('user', 'user@test.com', '$2a$10$N9qo8uLOogjWLX.x0sX.h.Z3Q5Uj6x5BVBz6W8qQ8hOJPq9hXyCzW', 
-        'Test', 'User', '9123456789', 1, NOW());
+VALUES ('customer', 'customer@flowforge.com', '$2a$10$N9qo8uLOogjWLX.x0sX.h.Z3Q5Uj6x5BVBz6W8qQ8hOJPq9hXyCzW', 
+        'Test', 'Customer', '9123456789', 1, NOW());
 
 INSERT INTO user_roles (user_id, role_id)
-VALUES ((SELECT id FROM users WHERE username = 'user'), 
+VALUES ((SELECT id FROM users WHERE username = 'customer'), 
         (SELECT id FROM roles WHERE name = 'ROLE_USER'));
 
--- 2.8 Verify users
+-- 2.6 Verify users
 SELECT id, username, email, first_name, last_name, phone_number, status, created_at, updated_at 
 FROM users;
 
--- 2.9 Check order counts per user (for dashboard)
+-- 2.7 Check order counts per user (for dashboard)
 SELECT 
     u.id,
     u.username,
@@ -127,7 +157,7 @@ FROM users u
 LEFT JOIN orders o ON u.id = o.user_id
 GROUP BY u.id, u.username, u.email;
 
--- 2.10 Deactivate/Reactivate user examples
+-- 2.8 Deactivate/Reactivate user examples
 -- UPDATE users SET status = 0, updated_at = NOW() WHERE id = 2;  -- Deactivate
 -- UPDATE users SET status = 1, updated_at = NOW() WHERE id = 2;  -- Reactivate
 
@@ -156,13 +186,28 @@ CREATE TABLE IF NOT EXISTS products (
     INDEX idx_status (status)
 );
 
--- 3.2 Insert sample product data
+-- 3.2 Insert comprehensive product catalog (12 products across 4 categories)
 INSERT INTO products (product_name, description, price, sku, category_id, inventory_count, status) 
 VALUES 
-('Laptop Pro 15"', 'High-performance laptop with 16GB RAM and 512GB SSD', 1299.99, 'LP-15-001', 1, 50, 1),
-('Wireless Mouse', 'Ergonomic wireless mouse with USB-C charging', 29.99, 'WM-001', 1, 200, 1),
-('Business Shirt', 'Premium cotton business shirt', 49.99, 'BS-001', 2, 100, 1),
-('Forklift', 'Industrial forklift for warehouse operations', 15000.00, 'FL-001', 3, 5, 0);
+-- Electronics (category_id = 1)
+('iPhone 15 Pro Max', 'Latest Apple smartphone with A17 Pro chip, 256GB storage', 1199.99, 'ELEC-IPH15PM', 1, 50, 1),
+('MacBook Pro 16"', 'M3 Pro chip, 18GB RAM, 512GB SSD, Space Black', 2499.99, 'ELEC-MBP16', 1, 25, 1),
+('Sony WH-1000XM5', 'Premium wireless noise-canceling headphones', 349.99, 'ELEC-SNYWH5', 1, 100, 1),
+
+-- Clothing (category_id = 2)
+('Nike Air Max 270', 'Men running shoes, breathable mesh, black/white', 149.99, 'CLTH-NAM270', 2, 75, 1),
+('Levi 501 Original Jeans', 'Classic straight fit jeans, dark wash', 79.99, 'CLTH-LV501', 2, 120, 1),
+('North Face Puffer Jacket', 'Water-resistant winter jacket, black', 299.99, 'CLTH-NFPUF', 2, 40, 1),
+
+-- Home & Garden (category_id = 3)
+('Dyson V15 Detect', 'Cordless vacuum with laser dust detection', 749.99, 'HOME-DYSV15', 3, 30, 1),
+('KitchenAid Stand Mixer', 'Artisan series, 5-quart, empire red', 449.99, 'HOME-KASM', 3, 45, 1),
+('Philips Hue Starter Kit', 'Smart LED bulbs with bridge, 4-pack', 199.99, 'HOME-PHHUE', 3, 60, 1),
+
+-- Sports & Outdoors (category_id = 4)
+('Yeti Tundra 45 Cooler', 'Premium hard cooler, 45-quart capacity', 325.00, 'SPRT-YETT45', 4, 35, 1),
+('Garmin Fenix 7', 'Multisport GPS smartwatch, solar charging', 699.99, 'SPRT-GRMF7', 4, 55, 1),
+('Coleman 8-Person Tent', 'WeatherMaster cabin tent with screen room', 279.99, 'SPRT-CLM8PT', 4, 20, 1);
 
 -- 3.3 Select all products with category (admin view)
 SELECT 
@@ -181,7 +226,7 @@ FROM products p
 LEFT JOIN categories c ON p.category_id = c.category_id
 ORDER BY p.product_name;
 
--- 3.4 Select active products only
+-- 3.4 Select active products only (customer view)
 SELECT 
     p.product_id,
     p.product_name,
@@ -195,15 +240,15 @@ LEFT JOIN categories c ON p.category_id = c.category_id
 WHERE p.status = 1
 ORDER BY p.product_name;
 
--- 3.5 Update product
-UPDATE products 
-SET price = 1199.99, inventory_count = 45, updated_at = NOW() 
-WHERE product_id = 1;
+-- 3.5 Update product example
+-- UPDATE products 
+-- SET price = 1099.99, inventory_count = 45, updated_at = NOW() 
+-- WHERE product_id = 1;
 
--- 3.6 Soft delete product
-UPDATE products 
-SET status = 0, updated_at = NOW() 
-WHERE product_id = 1;
+-- 3.6 Soft delete product example
+-- UPDATE products 
+-- SET status = 0, updated_at = NOW() 
+-- WHERE product_id = 1;
 
 -- 3.7 Count products by category
 SELECT 
@@ -217,6 +262,11 @@ ORDER BY c.category_name;
 
 -- ############################################################################
 -- SECTION 4: ORDER MANAGEMENT
+-- ############################################################################
+-- IMPORTANT: Orders should be created via the API to ensure:
+--   1. Workflow instances are properly created and linked
+--   2. Payment and Shipping records are auto-generated with PENDING status
+--   3. Proper event-driven workflow transitions
 -- ############################################################################
 
 -- ----------------------------------------------------------------------------
@@ -254,22 +304,29 @@ CREATE TABLE IF NOT EXISTS order_items (
     INDEX idx_product_id (product_id)
 );
 
--- 4.3 Insert sample order data
-INSERT INTO orders (user_id, total_amount, shipping_address, order_status, status) 
-VALUES 
-(1, 2599.98, '123 Main St, City, State 12345', 'Pending', 1),
-(2, 149.99, '456 Oak Ave, Town, State 67890', 'Shipped', 1),
-(1, 49.99, '789 Pine Rd, Village, State 11111', 'Delivered', 1);
+-- ----------------------------------------------------------------------------
+-- 4.3 Sample order creation (RECOMMENDED: Use API instead)
+-- ----------------------------------------------------------------------------
+-- Orders created via API will automatically:
+-- - Create a workflow instance (OrderLifecycleWorkflow)
+-- - Create a PENDING payment record
+-- - Create a PENDING shipping record
+--
+-- Example API call to create an order:
+-- curl -X POST http://localhost:8080/api/orders \
+--   -H "Authorization: Bearer <JWT_TOKEN>" \
+--   -H "Content-Type: application/json" \
+--   -d '{
+--     "shippingAddress": "123 Main St, City, State 12345",
+--     "paymentMethod": "Credit Card",
+--     "items": [
+--       {"productId": 1, "quantity": 1},
+--       {"productId": 2, "quantity": 2}
+--     ]
+--   }'
+-- ----------------------------------------------------------------------------
 
--- 4.4 Insert sample order_items data
-INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase) 
-VALUES 
-(1, 1, 1, 1299.99),
-(1, 3, 1, 49.99),
-(2, 1, 2, 1299.99),
-(3, 3, 1, 49.99);
-
--- 4.5 Select all orders (admin view)
+-- 4.4 Select all orders (admin view)
 SELECT 
     o.order_id,
     u.username,
@@ -283,7 +340,7 @@ FROM orders o
 LEFT JOIN users u ON o.user_id = u.id
 ORDER BY o.created_at DESC;
 
--- 4.6 Select orders by status (admin filter)
+-- 4.5 Select orders by status (admin filter)
 SELECT 
     o.order_id,
     u.username,
@@ -296,7 +353,7 @@ LEFT JOIN users u ON o.user_id = u.id
 WHERE o.order_status = 'Pending' AND o.status = 1
 ORDER BY o.created_at DESC;
 
--- 4.7 Select user orders (customer view)
+-- 4.6 Select user orders (customer view)
 SELECT 
     o.order_id,
     o.total_amount,
@@ -310,7 +367,7 @@ WHERE o.user_id = 1 AND o.status = 1
 GROUP BY o.order_id
 ORDER BY o.created_at DESC;
 
--- 4.8 Select order details with items
+-- 4.7 Select order details with items
 SELECT 
     o.order_id,
     o.total_amount,
@@ -328,17 +385,7 @@ LEFT JOIN products p ON oi.product_id = p.product_id
 WHERE o.order_id = 1
 ORDER BY oi.id;
 
--- 4.9 Update order status (admin action)
-UPDATE orders 
-SET order_status = 'Shipped', updated_at = NOW() 
-WHERE order_id = 2;
-
--- 4.10 Cancel order (customer action)
-UPDATE orders 
-SET order_status = 'Cancelled', status = 0, updated_at = NOW() 
-WHERE order_id = 1 AND order_status = 'Pending';
-
--- 4.11 Order statistics by status
+-- 4.8 Order statistics by status
 SELECT 
     order_status,
     COUNT(*) as order_count,
@@ -348,9 +395,35 @@ WHERE status = 1
 GROUP BY order_status
 ORDER BY order_status;
 
+-- 4.9 Complete order view with payment and shipping status
+SELECT 
+    o.order_id,
+    u.username,
+    o.total_amount,
+    o.order_status,
+    p.payment_status,
+    s.shipping_status,
+    wi.id as workflow_id,
+    ws.state_name as workflow_state,
+    o.created_at
+FROM orders o
+LEFT JOIN users u ON o.user_id = u.id
+LEFT JOIN payments p ON o.order_id = p.order_id
+LEFT JOIN shipping s ON o.order_id = s.order_id
+LEFT JOIN workflow_instances wi ON wi.entity_id = o.order_id AND wi.entity_type = 'ORDER'
+LEFT JOIN workflow_states ws ON wi.current_state_id = ws.id
+ORDER BY o.created_at DESC;
+
 
 -- ############################################################################
 -- SECTION 5: PAYMENT MANAGEMENT
+-- ############################################################################
+-- Payment records are auto-created with PENDING status when an order is placed.
+-- 
+-- Payment Lifecycle:
+--   PENDING → COMPLETED (triggers PaymentCompletedEvent → Order workflow to PAID)
+--   PENDING → FAILED (payment failed)
+--   COMPLETED → REFUNDED (triggers PaymentRefundedEvent → Order workflow to REFUNDED)
 -- ############################################################################
 
 -- ----------------------------------------------------------------------------
@@ -361,11 +434,11 @@ CREATE TABLE IF NOT EXISTS payments (
     order_id BIGINT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     payment_method VARCHAR(50) NOT NULL,
-    payment_status VARCHAR(50) NOT NULL,
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
-    INDEX idx_payment_order (order_id),
+    UNIQUE KEY uk_payment_order (order_id),
     INDEX idx_payment_status (payment_status)
 );
 
@@ -391,6 +464,7 @@ JOIN orders o ON p.order_id = o.order_id
 JOIN users u ON o.user_id = u.id;
 
 -- 5.5 Get payments by status
+SELECT * FROM payments WHERE payment_status = 'PENDING';
 SELECT * FROM payments WHERE payment_status = 'COMPLETED';
 SELECT * FROM payments WHERE payment_status = 'FAILED';
 SELECT * FROM payments WHERE payment_status = 'REFUNDED';
@@ -403,14 +477,17 @@ SELECT
 FROM payments
 GROUP BY payment_status;
 
--- 5.7 Manual refund (if needed via SQL)
+-- 5.7 Process payment (mark as COMPLETED) - Use API instead for proper event publishing
+-- API: POST /api/payments (with orderId and paymentMethod)
+-- Manual SQL update will NOT trigger workflow transitions:
+-- UPDATE payments 
+-- SET payment_status = 'COMPLETED', updated_at = NOW() 
+-- WHERE payment_id = 1;
+
+-- 5.8 Manual refund example (Use API: POST /api/payments/1/refund)
 -- UPDATE payments 
 -- SET payment_status = 'REFUNDED', updated_at = NOW() 
 -- WHERE payment_id = 1;
-
--- UPDATE orders 
--- SET order_status = 'Refunded', updated_at = NOW() 
--- WHERE order_id = (SELECT order_id FROM payments WHERE payment_id = 1);
 
 
 -- ############################################################################
@@ -552,6 +629,14 @@ GROUP BY w.wishlist_id, u.username;
 -- ############################################################################
 -- SECTION 8: SHIPPING MANAGEMENT
 -- ############################################################################
+-- Shipping records are auto-created with PENDING status when an order is placed.
+-- 
+-- Shipping Lifecycle:
+--   PENDING → Shipped (courier assigned, tracking number generated)
+--   Shipped → In Transit (package in transit)
+--   In Transit → Delivered (triggers OrderDeliveredEvent → Order workflow to DELIVERED)
+--   Any status → Returned (package returned to sender)
+-- ############################################################################
 
 -- ----------------------------------------------------------------------------
 -- 8.1 Create shipping table
@@ -559,11 +644,11 @@ GROUP BY w.wishlist_id, u.username;
 CREATE TABLE IF NOT EXISTS shipping (
     shipping_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT NOT NULL,
-    courier_service VARCHAR(100) NOT NULL,
+    courier_service VARCHAR(100) NOT NULL DEFAULT 'To be assigned',
     tracking_number VARCHAR(100) NOT NULL,
-    shipping_status VARCHAR(50) NOT NULL,
-    shipping_method VARCHAR(50) NOT NULL,
-    shipping_cost DECIMAL(10,2) NOT NULL,
+    shipping_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    shipping_method VARCHAR(50) NOT NULL DEFAULT 'Standard',
+    shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_shipping_order (order_id),
@@ -590,6 +675,30 @@ FROM shipping s
 JOIN orders o ON s.order_id = o.order_id
 JOIN users u ON o.user_id = u.id
 ORDER BY s.created_at DESC;
+
+-- 8.4 Get shipments by status
+SELECT * FROM shipping WHERE shipping_status = 'PENDING';
+SELECT * FROM shipping WHERE shipping_status = 'Shipped';
+SELECT * FROM shipping WHERE shipping_status = 'In Transit';
+SELECT * FROM shipping WHERE shipping_status = 'Delivered';
+
+-- 8.5 Update shipping status (Use API for proper workflow triggers)
+-- API: PUT /api/shipping/1/status with body {"status": "Shipped", "courierService": "FedEx", "trackingNumber": "FX123456"}
+-- Manual SQL update:
+-- UPDATE shipping 
+-- SET shipping_status = 'Shipped', 
+--     courier_service = 'FedEx', 
+--     tracking_number = 'FX123456789',
+--     updated_at = NOW() 
+-- WHERE shipping_id = 1;
+
+-- 8.6 Shipping statistics
+SELECT 
+    shipping_status,
+    COUNT(*) as count,
+    SUM(shipping_cost) as total_cost
+FROM shipping
+GROUP BY shipping_status;
 
 
 -- ############################################################################
@@ -949,26 +1058,268 @@ UNION ALL SELECT 'workflow_logs', COUNT(*) FROM workflow_logs;
 -- SECTION 14: UTILITY COMMANDS
 -- ############################################################################
 
--- 14.1 Clear all transactional data (for testing - DANGER!)
--- SET FOREIGN_KEY_CHECKS = 0;
--- TRUNCATE TABLE workflow_logs;
--- TRUNCATE TABLE workflow_instances;
--- TRUNCATE TABLE shipping;
--- TRUNCATE TABLE payments;
--- TRUNCATE TABLE order_items;
--- TRUNCATE TABLE orders;
--- TRUNCATE TABLE cart_items;
--- TRUNCATE TABLE carts;
--- TRUNCATE TABLE wishlist_items;
--- TRUNCATE TABLE wishlists;
--- TRUNCATE TABLE reviews;
--- SET FOREIGN_KEY_CHECKS = 1;
+-- 14.1 Clear all transactional data (for testing - preserves master data)
+-- This keeps users, products, categories, workflows but clears orders/payments/shipping
+/*
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE workflow_logs;
+TRUNCATE TABLE workflow_instances;
+TRUNCATE TABLE shipping;
+TRUNCATE TABLE payments;
+TRUNCATE TABLE order_items;
+TRUNCATE TABLE orders;
+TRUNCATE TABLE cart_items;
+TRUNCATE TABLE carts;
+TRUNCATE TABLE wishlist_items;
+TRUNCATE TABLE wishlists;
+TRUNCATE TABLE reviews;
+SET FOREIGN_KEY_CHECKS = 1;
+SELECT 'Transactional data cleared!' AS status;
+*/
 
--- 14.2 Reset password for admin user (password: admin123)
--- UPDATE users 
--- SET password = '$2a$10$WbspULzqno53UEVNJDSy4ur3usqP8Owh1JQKQyy2uAACW5U3aYH/u' 
--- WHERE username = 'admin';
+-- 14.2 Full database reset (clears EVERYTHING - use with caution!)
+/*
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE workflow_logs;
+TRUNCATE TABLE workflow_instances;
+TRUNCATE TABLE workflow_transitions;
+TRUNCATE TABLE workflow_states;
+TRUNCATE TABLE workflow_definitions;
+TRUNCATE TABLE shipping;
+TRUNCATE TABLE payments;
+TRUNCATE TABLE order_items;
+TRUNCATE TABLE orders;
+TRUNCATE TABLE cart_items;
+TRUNCATE TABLE carts;
+TRUNCATE TABLE wishlist_items;
+TRUNCATE TABLE wishlists;
+TRUNCATE TABLE reviews;
+TRUNCATE TABLE coupons;
+TRUNCATE TABLE products;
+TRUNCATE TABLE categories;
+TRUNCATE TABLE user_roles;
+TRUNCATE TABLE users;
+TRUNCATE TABLE roles;
+SET FOREIGN_KEY_CHECKS = 1;
+SELECT 'ALL data cleared!' AS status;
+*/
+
+
+-- ############################################################################
+-- SECTION 15: QUICK START - DATABASE SEEDING (RUN THIS FOR FRESH SETUP)
+-- ############################################################################
+-- This section provides a quick way to reset and seed the database with:
+-- - 4 Categories
+-- - 12 Products  
+-- - 3 Workflow definitions with states and transitions
+-- - Users should be created via API for proper BCrypt hashing
+-- ############################################################################
+
+-- 15.1 Quick seed categories (run after truncate)
+/*
+INSERT INTO categories (category_name, description, status) VALUES 
+('Electronics', 'Smartphones, laptops, tablets, and electronic accessories', 1),
+('Clothing', 'Men and women apparel, fashion wear', 1),
+('Home & Garden', 'Home decor, furniture, and garden supplies', 1),
+('Sports & Outdoors', 'Sports equipment and outdoor gear', 1);
+*/
+
+-- 15.2 Quick seed products (run after categories are seeded)
+/*
+INSERT INTO products (product_name, description, price, sku, category_id, inventory_count, status) VALUES 
+('iPhone 15 Pro Max', 'Latest Apple smartphone with A17 Pro chip, 256GB storage', 1199.99, 'ELEC-IPH15PM', 1, 50, 1),
+('MacBook Pro 16"', 'M3 Pro chip, 18GB RAM, 512GB SSD, Space Black', 2499.99, 'ELEC-MBP16', 1, 25, 1),
+('Sony WH-1000XM5', 'Premium wireless noise-canceling headphones', 349.99, 'ELEC-SNYWH5', 1, 100, 1),
+('Nike Air Max 270', 'Men running shoes, breathable mesh, black/white', 149.99, 'CLTH-NAM270', 2, 75, 1),
+('Levi 501 Original Jeans', 'Classic straight fit jeans, dark wash', 79.99, 'CLTH-LV501', 2, 120, 1),
+('North Face Puffer Jacket', 'Water-resistant winter jacket, black', 299.99, 'CLTH-NFPUF', 2, 40, 1),
+('Dyson V15 Detect', 'Cordless vacuum with laser dust detection', 749.99, 'HOME-DYSV15', 3, 30, 1),
+('KitchenAid Stand Mixer', 'Artisan series, 5-quart, empire red', 449.99, 'HOME-KASM', 3, 45, 1),
+('Philips Hue Starter Kit', 'Smart LED bulbs with bridge, 4-pack', 199.99, 'HOME-PHHUE', 3, 60, 1),
+('Yeti Tundra 45 Cooler', 'Premium hard cooler, 45-quart capacity', 325.00, 'SPRT-YETT45', 4, 35, 1),
+('Garmin Fenix 7', 'Multisport GPS smartwatch, solar charging', 699.99, 'SPRT-GRMF7', 4, 55, 1),
+('Coleman 8-Person Tent', 'WeatherMaster cabin tent with screen room', 279.99, 'SPRT-CLM8PT', 4, 20, 1);
+*/
+
+-- 15.3 Quick seed workflows (REQUIRED for order lifecycle to work!)
+/*
+-- Order Lifecycle Workflow
+INSERT INTO workflow_definitions (name, description, entity_type, active)
+VALUES ('OrderLifecycleWorkflow', 'Manages the complete lifecycle of customer orders from creation to delivery or cancellation', 'ORDER', TRUE);
+SET @order_wf = LAST_INSERT_ID();
+
+INSERT INTO workflow_states (workflow_id, state_name, description, is_initial, is_terminal, display_order, color_code) VALUES 
+(@order_wf, 'CREATED', 'Order has been created and is awaiting payment', TRUE, FALSE, 1, '#6c757d'),
+(@order_wf, 'PAYMENT_PENDING', 'Waiting for payment confirmation', FALSE, FALSE, 2, '#ffc107'),
+(@order_wf, 'PAID', 'Payment has been received and confirmed', FALSE, FALSE, 3, '#17a2b8'),
+(@order_wf, 'PROCESSING', 'Order is being processed and prepared', FALSE, FALSE, 4, '#007bff'),
+(@order_wf, 'SHIPPED', 'Order has been shipped to customer', FALSE, FALSE, 5, '#6610f2'),
+(@order_wf, 'DELIVERED', 'Order has been delivered successfully', FALSE, TRUE, 6, '#28a745'),
+(@order_wf, 'CANCELLED', 'Order has been cancelled', FALSE, TRUE, 7, '#dc3545'),
+(@order_wf, 'REFUNDED', 'Order has been refunded', FALSE, TRUE, 8, '#e83e8c');
+
+SET @s_created = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'CREATED');
+SET @s_pending = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'PAYMENT_PENDING');
+SET @s_paid = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'PAID');
+SET @s_processing = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'PROCESSING');
+SET @s_shipped = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'SHIPPED');
+SET @s_delivered = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'DELIVERED');
+SET @s_cancelled = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'CANCELLED');
+SET @s_refunded = (SELECT id FROM workflow_states WHERE workflow_id = @order_wf AND state_name = 'REFUNDED');
+
+INSERT INTO workflow_transitions (workflow_id, from_state_id, to_state_id, allowed_roles, action_name, description, requires_comment) VALUES 
+(@order_wf, @s_created, @s_pending, 'ROLE_USER,ROLE_ADMIN,SYSTEM', 'Initiate Payment', 'Move order to payment pending state', FALSE),
+(@order_wf, @s_created, @s_cancelled, 'ROLE_USER,ROLE_ADMIN', 'Cancel Order', 'Cancel the order before payment', FALSE),
+(@order_wf, @s_pending, @s_paid, 'SYSTEM,ROLE_ADMIN', 'Confirm Payment', 'Payment has been verified and confirmed', FALSE),
+(@order_wf, @s_pending, @s_cancelled, 'ROLE_USER,ROLE_ADMIN', 'Cancel Order', 'Cancel order due to payment failure', TRUE),
+(@order_wf, @s_paid, @s_processing, 'ROLE_ADMIN,SYSTEM', 'Start Processing', 'Begin order processing', FALSE),
+(@order_wf, @s_paid, @s_refunded, 'ROLE_ADMIN', 'Refund Order', 'Issue full refund', TRUE),
+(@order_wf, @s_processing, @s_shipped, 'ROLE_ADMIN', 'Ship Order', 'Order shipped to carrier', FALSE),
+(@order_wf, @s_processing, @s_refunded, 'ROLE_ADMIN', 'Refund Order', 'Issue refund during processing', TRUE),
+(@order_wf, @s_shipped, @s_delivered, 'ROLE_ADMIN,SYSTEM', 'Mark Delivered', 'Confirm delivery', FALSE),
+(@order_wf, @s_shipped, @s_refunded, 'ROLE_ADMIN', 'Refund Order', 'Issue refund for shipped order', TRUE);
+
+-- Payment Workflow
+INSERT INTO workflow_definitions (name, description, entity_type, active)
+VALUES ('PaymentWorkflow', 'Tracks payment processing status', 'PAYMENT', TRUE);
+SET @payment_wf = LAST_INSERT_ID();
+
+INSERT INTO workflow_states (workflow_id, state_name, description, is_initial, is_terminal, display_order, color_code) VALUES 
+(@payment_wf, 'INITIATED', 'Payment initiated', TRUE, FALSE, 1, '#6c757d'),
+(@payment_wf, 'PROCESSING', 'Payment processing', FALSE, FALSE, 2, '#ffc107'),
+(@payment_wf, 'COMPLETED', 'Payment completed', FALSE, TRUE, 3, '#28a745'),
+(@payment_wf, 'FAILED', 'Payment failed', FALSE, TRUE, 4, '#dc3545'),
+(@payment_wf, 'REFUNDED', 'Payment refunded', FALSE, TRUE, 5, '#e83e8c');
+
+-- Shipment Workflow
+INSERT INTO workflow_definitions (name, description, entity_type, active)
+VALUES ('ShipmentWorkflow', 'Tracks shipment status through delivery process', 'SHIPMENT', TRUE);
+SET @shipment_wf = LAST_INSERT_ID();
+
+INSERT INTO workflow_states (workflow_id, state_name, description, is_initial, is_terminal, display_order, color_code) VALUES 
+(@shipment_wf, 'PENDING', 'Shipment pending', TRUE, FALSE, 1, '#6c757d'),
+(@shipment_wf, 'PICKED_UP', 'Picked up by carrier', FALSE, FALSE, 2, '#17a2b8'),
+(@shipment_wf, 'IN_TRANSIT', 'In transit', FALSE, FALSE, 3, '#007bff'),
+(@shipment_wf, 'OUT_FOR_DELIVERY', 'Out for delivery', FALSE, FALSE, 4, '#6610f2'),
+(@shipment_wf, 'DELIVERED', 'Delivered', FALSE, TRUE, 5, '#28a745'),
+(@shipment_wf, 'RETURNED', 'Returned to sender', FALSE, TRUE, 6, '#dc3545');
+
+SELECT 'Workflows seeded successfully!' AS status;
+*/
+
+-- 15.4 Create users via API (RECOMMENDED - Run after backend is started)
+-- Execute these curl commands in terminal (not in MySQL):
+/*
+# Create admin user
+curl -X POST http://localhost:8080/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","email":"admin@flowforge.com","password":"admin123","role":["admin"]}'
+
+# Create customer user
+curl -X POST http://localhost:8080/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"username":"customer","email":"customer@flowforge.com","password":"customer123"}'
+
+# Login to get JWT token
+curl -X POST http://localhost:8080/api/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+
+# Create an order (replace <TOKEN> with actual JWT)
+curl -X POST http://localhost:8080/api/orders \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"shippingAddress":"123 Main St, City, State 12345","paymentMethod":"Credit Card","items":[{"productId":1,"quantity":1}]}'
+*/
+
+
+-- ############################################################################
+-- SECTION 16: ORDER LIFECYCLE WORKFLOW DEMO
+-- ############################################################################
+-- Complete workflow demonstration showing order from creation to delivery
+-- ############################################################################
+
+-- 16.1 View order with all related data
+/*
+SELECT 
+    o.order_id,
+    u.username,
+    o.total_amount,
+    o.order_status,
+    p.payment_status,
+    p.payment_method,
+    s.shipping_status,
+    s.courier_service,
+    s.tracking_number,
+    wi.id as workflow_id,
+    ws.state_name as workflow_state,
+    o.created_at
+FROM orders o
+LEFT JOIN users u ON o.user_id = u.id
+LEFT JOIN payments p ON o.order_id = p.order_id
+LEFT JOIN shipping s ON o.order_id = s.order_id
+LEFT JOIN workflow_instances wi ON wi.entity_id = o.order_id AND wi.entity_type = 'ORDER'
+LEFT JOIN workflow_states ws ON wi.current_state_id = ws.id
+WHERE o.order_id = 1;
+*/
+
+-- 16.2 Manually progress order through workflow (for testing without API)
+/*
+-- Step 1: Mark payment as COMPLETED
+UPDATE payments SET payment_status = 'COMPLETED', payment_method = 'Credit Card', updated_at = NOW() WHERE order_id = 1;
+UPDATE orders SET order_status = 'Paid', updated_at = NOW() WHERE order_id = 1;
+
+-- Step 2: Update shipping to Shipped
+UPDATE shipping SET shipping_status = 'Shipped', courier_service = 'FedEx', tracking_number = 'FX123456789', updated_at = NOW() WHERE order_id = 1;
+UPDATE orders SET order_status = 'Shipped', updated_at = NOW() WHERE order_id = 1;
+
+-- Step 3: Update shipping to In Transit
+UPDATE shipping SET shipping_status = 'In Transit', updated_at = NOW() WHERE order_id = 1;
+
+-- Step 4: Mark as Delivered
+UPDATE shipping SET shipping_status = 'Delivered', updated_at = NOW() WHERE order_id = 1;
+UPDATE orders SET order_status = 'Delivered', updated_at = NOW() WHERE order_id = 1;
+*/
+
+-- 16.3 View workflow audit log
+SELECT 
+    wl.id,
+    wi.entity_type,
+    wi.entity_id,
+    fs.state_name as from_state,
+    ts.state_name as to_state,
+    wl.action_name,
+    wl.performed_by,
+    wl.timestamp
+FROM workflow_logs wl
+JOIN workflow_instances wi ON wl.workflow_instance_id = wi.id
+LEFT JOIN workflow_states fs ON wl.from_state_id = fs.id
+JOIN workflow_states ts ON wl.to_state_id = ts.id
+ORDER BY wl.timestamp DESC;
+
 
 -- ============================================================================
 -- END OF FlowForge Complete SQL Schema
+-- ============================================================================
+-- 
+-- QUICK REFERENCE:
+-- ================
+-- Credentials (create via API for proper hashing):
+--   Admin: admin / admin123 (ROLE_ADMIN)
+--   Customer: customer / customer123 (ROLE_USER)
+--
+-- API Endpoints:
+--   POST /api/auth/signup - Register user
+--   POST /api/auth/signin - Login (get JWT token)
+--   GET /api/products - List products
+--   POST /api/orders - Create order (auto-creates payment/shipping)
+--   POST /api/payments - Process payment
+--   PUT /api/shipping/{id}/status - Update shipping status
+--   GET /api/workflow/instances/entity/ORDER/{id} - Get order workflow
+--
+-- Order Lifecycle:
+--   CREATED → PAYMENT_PENDING → PAID → PROCESSING → SHIPPED → DELIVERED
+--                    ↓                      ↓            ↓
+--                CANCELLED              REFUNDED    REFUNDED
+--
 -- ============================================================================

@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.workflowcommerce.model.Order;
 import com.example.workflowcommerce.model.OrderItem;
+import com.example.workflowcommerce.model.Payment;
 import com.example.workflowcommerce.model.Product;
+import com.example.workflowcommerce.model.Shipping;
 import com.example.workflowcommerce.model.User;
 import com.example.workflowcommerce.payload.request.OrderItemRequest;
 import com.example.workflowcommerce.payload.request.OrderRequest;
@@ -140,14 +142,30 @@ public class OrderController {
                 couponService.incrementUsageCount(orderRequest.getCouponCode());
             }
 
+            // Auto-create Payment record with PENDING status
+            Payment payment = new Payment();
+            payment.setOrder(order);
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod(orderRequest.getPaymentMethod() != null ? orderRequest.getPaymentMethod() : "PENDING");
+            payment.setPaymentStatus("PENDING");
+            paymentRepository.save(payment);
+
+            // Auto-create Shipping record with PENDING status
+            Shipping shipping = new Shipping();
+            shipping.setOrder(order);
+            shipping.setCourierService("To be assigned");
+            shipping.setTrackingNumber("TBD-" + order.getOrderId());
+            shipping.setShippingStatus("PENDING");
+            shipping.setShippingMethod("Standard");
+            shipping.setShippingCost(BigDecimal.ZERO);
+            shippingRepository.save(shipping);
+
             // Initialize workflow for the new order
-            // Note: Payment and Shipping records are created when customer pays and admin ships
-            // This follows the proper workflow: CREATED -> PAYMENT_PENDING -> PAID -> PROCESSING -> SHIPPED -> DELIVERED
             workflowIntegrationService.onOrderCreated(order.getOrderId(), currentUser.getUsername());
 
             return ResponseEntity.ok(new MessageResponse(
                 "Order placed successfully. Order ID: " + order.getOrderId() + 
-                ". Payment and Shipping operations created. Admin can process them in workflow."));
+                ". Payment and Shipping records created automatically."));
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Error creating order: " + e.getMessage()));
