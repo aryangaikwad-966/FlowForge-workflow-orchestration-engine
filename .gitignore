@@ -21,3 +21,4 @@ Frontend/.env
 # Temporary files
 backend.zip
 backend.tgz
+HashGenerator.java
